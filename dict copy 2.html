@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocabMaster Pro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f7fa;
+            color: #2d3748;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            color: #4a5568;
+            margin-bottom: 1.5rem;
+        }
+
+        input, select, button {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #5a67d8;
+        }
+
+        .word-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .word-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .word-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .category {
+            color: #718096;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .delete-btn {
+            background-color: #fc8181;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .delete-btn:hover {
+            background-color: #f56565;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #edf2f7;
+            border-radius: 4px;
+        }
+
+        .error {
+            color: #e53e3e;
+            margin-top: 0.5rem;
+        }
+
+        .success {
+            color: #38a169;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>VocabMaster Pro</h1>
+        <p>Master Languages Through Interactive Learning</p>
+    </header>
+
+    <div class="container">
+        <div class="section">
+            <h2>Add New Word</h2>
+            <form id="addWordForm" onsubmit="handleSubmit(event)">
+                <select id="category" class="categories-select" required>
+                    <option value="">Select Category</option>
+                    <option value="general">General</option>
+                    <option value="business">Business</option>
+                    <option value="academic">Academic</option>
+                    <option value="travel">Travel</option>
+                </select>
+                <input type="text" id="word" placeholder="Enter word" required>
+                <input type="text" id="translation" placeholder="Enter translation" required>
+                <button type="submit">Add Word</button>
+            </form>
+            <div id="message"></div>
+        </div>
+
+        <div class="section">
+            <h2>Your Dictionary</h2>
+            <div class="controls">
+                <input type="text" id="searchWord" placeholder="Search words..." oninput="searchDictionary()">
+                <select id="filterCategory" onchange="filterDictionary()">
+                    <option value="all">All Categories</option>
+                    <option value="general">General</option>
+                    <option value="business">Business</option>
+                    <option value="academic">Academic</option>
+                    <option value="travel">Travel</option>
+                </select>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div id="dictionaryGrid" class="word-grid"></div>
+        </div>
+    </div>
+
+<!-- Add this to the container div, after the dictionary section -->
+<div class="section learning-center compact">
+    <h2>Learning Center</h2>
+    <div class="learning-tabs">
+        <button class="tab-btn active" onclick="switchTab('flashcards')">Flashcards</button>
+        <button class="tab-btn" onclick="switchTab('quiz')">Quiz</button>
+        <button class="tab-btn" onclick="switchTab('memory')">Memory</button>
+        <button class="tab-btn" onclick="switchTab('typing')">Typing</button>
+        <button class="tab-btn" onclick="switchTab('hangman')">Hangman</button>
+        <button class="tab-btn" onclick="switchTab('wordSearch')">Word Search</button>
+    </div>
+
+    <div id="flashcards" class="game-container active compact">
+        <div class="controls">
+            <select id="flashcardCategory">
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="business">Business</option>
+                <option value="academic">Academic</option>
+                <option value="travel">Travel</option>
+            </select>
+            <button onclick="startFlashcards()">Start Practice</button>
+        </div>
+        <div class="flashcard" onclick="flipCard()">
+            <div class="flashcard-inner">
+                <div class="flashcard-front">
+                    <p id="cardWord"></p>
+                </div>
+                <div class="flashcard-back">
+                    <p id="cardTranslation"></p>
+                </div>
+            </div>
+        </div>
+        <div class="flashcard-controls">
+            <button onclick="previousCard()">Previous</button>
+            <span id="cardProgress">0/0</span>
+            <button onclick="nextCard()">Next</button>
+        </div>
+    </div>
+
+    <div id="quiz" class="game-container">
+        <div class="controls">
+            <select id="quizCategory">
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="business">Business</option>
+                <option value="academic">Academic</option>
+                <option value="travel">Travel</option>
+            </select>
+            <button onclick="startQuiz()">Start Quiz</button>
+        </div>
+        <div id="quizContent"></div>
+        <div id="quizResults"></div>
+    </div>
+
+    <div id="memory" class="game-container">
+        <div class="controls">
+            <select id="memoryCategory">
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="business">Business</option>
+                <option value="academic">Academic</option>
+                <option value="travel">Travel</option>
+            </select>
+            <button onclick="startMemoryGame()">Start Memory Game</button>
+        </div>
+        <div id="memoryGrid"></div>
+    </div>
+
+    <div id="typing" class="game-container">
+        <div class="controls">
+            <select id="typingCategory">
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="business">Business</option>
+                <option value="academic">Academic</option>
+                <option value="travel">Travel</option>
+            </select>
+            <button onclick="startTypingGame()">Start Typing Game</button>
+        </div>
+        <div id="typingGame">
+            <div id="wordToType"></div>
+            <input type="text" id="typingInput" placeholder="Type the word here...">
+            <div id="typingStats"></div>
+        </div>
+    </div>
+
+    <div id="hangman" class="game-container">
+        <div class="controls">
+            <select id="hangmanCategory">
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="business">Business</option>
+                <option value="academic">Academic</option>
+                <option value="travel">Travel</option>
+            </select>
+            <button onclick="startHangman()">Start Hangman</button>
+        </div>
+        <div id="hangmanGame">
+            <canvas id="hangmanCanvas"></canvas>
+            <div id="hangmanWord"></div>
+            <div id="hangmanLetters"></div>
+        </div>
+    </div>
+
+    <div id="wordSearch" class="game-container">
+        <div class="controls">
+            <select id="wordSearchCategory">
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="business">Business</option>
+                <option value="academic">Academic</option>
+                <option value="travel">Travel</option>
+            </select>
+            <button onclick="startWordSearch()">Generate Word Search</button>
+        </div>
+        <div id="wordSearchGrid"></div>
+        <div id="wordSearchWords"></div>
+    </div>
+</div>
+
+<!-- Add this CSS -->
+<style>
+.learning-center {
+    margin-top: 2rem;
+}
+
+.learning-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.tab-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+.game-container {
+    display: none;
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.game-container.active {
+    display: block;
+}
+
+.flashcard {
+    width: 300px;
+    height: 200px;
+    perspective: 1000px;
+    margin: 2rem auto;
+    cursor: pointer;
+}
+
+.flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+}
+
+.flashcard.flipped .flashcard-inner {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front, .flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1rem;
+}
+
+.flashcard-back {
+    transform: rotateY(180deg);
+    background: #667eea;
+    color: white;
+}
+
+.flashcard-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+#memoryGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.memory-card {
+    aspect-ratio: 1;
+    background: #667eea;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.875rem;
+    transition: transform 0.3s;
+}
+
+.memory-card.flipped {
+    transform: rotateY(180deg);
+}
+
+#typingGame {
+    text-align: center;
+}
+
+#wordToType {
+    font-size: 2rem;
+    margin: 2rem 0;
+}
+
+#hangmanCanvas {
+    border: 1px solid #e2e8f0;
+    margin: 1rem 0;
+}
+
+#hangmanLetters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.letter-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#wordSearchGrid {
+    display: grid;
+    gap: 2px;
+    margin-top: 1rem;
+}
+
+.word-search-cell {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+}
+
+.word-search-cell.selected {
+    background: #667eea;
+    color: white;
+}
+</style>
+
+<!-- Add this JavaScript -->
+<script>
+// Learning Center Functions
+function switchTab(tabName) {
+    document.querySelectorAll('.game-container').forEach(container => {
+        container.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
+    document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+}
+
+// Flashcards
+let currentCards = [];
+let currentCardIndex = 0;
+
+function startFlashcards() {
+    const category = document.getElementById('flashcardCategory').value;
+    currentCards = category === 'all' ? 
+        [...vocabulary] : 
+        vocabulary.filter(word => word.category === category);
+    
+    if (currentCards.length === 0) {
+        alert('No words available for selected category');
+        return;
+    }
+    
+    currentCards = shuffleArray(currentCards);
+    currentCardIndex = 0;
+    updateFlashcard();
+}
+
+function updateFlashcard() {
+    if (currentCards.length === 0) return;
+    
+    const card = currentCards[currentCardIndex];
+    document.getElementById('cardWord').textContent = card.word;
+    document.getElementById('cardTranslation').textContent = card.translation;
+    document.getElementById('cardProgress').textContent = 
+        `${currentCardIndex + 1}/${currentCards.length}`;
+}
+
+function flipCard() {
+    document.querySelector('.flashcard').classList.toggle('flipped');
+}
+
+function nextCard() {
+    if (currentCardIndex < currentCards.length - 1) {
+        currentCardIndex++;
+        updateFlashcard();
+        document.querySelector('.flashcard').classList.remove('flipped');
+    }
+}
+
+function previousCard() {
+    if (currentCardIndex > 0) {
+        currentCardIndex--;
+        updateFlashcard();
+        document.querySelector('.flashcard').classList.remove('flipped');
+    }
+}
+
+// Quiz Game
+function startQuiz() {
+    const category = document.getElementById('quizCategory').value;
+    const words = category === 'all' ? 
+        [...vocabulary] : 
+        vocabulary.filter(word => word.category === category);
+    
+    if (words.length < 4) {
+        alert('Need at least 4 words to start a quiz');
+        return;
+    }
+
+    const shuffledWords = shuffleArray(words);
+    const quizContent = document.getElementById('quizContent');
+    quizContent.innerHTML = '';
+    
+    for (let i = 0; i < Math.min(10, shuffledWords.length); i++) {
+        const correctWord = shuffledWords[i];
+        const options = [correctWord.translation];
+        
+        // Add 3 random incorrect options
+        while (options.length < 4) {
+            const randomWord = words[Math.floor(Math.random() * words.length)].translation;
+            if (!options.includes(randomWord)) {
+                options.push(randomWord);
+            }
+        }
+
+        const shuffledOptions = shuffleArray(options);
+        
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'quiz-question';
+        questionDiv.innerHTML = `
+            <p>What is the translation of "${correctWord.word}"?</p>
+            ${shuffledOptions.map((option, index) => `
+                <label>
+                    <input type="radio" name="q${i}" value="${option}">
+                    ${option}
+                </label>
+            `).join('')}
+            <div class="answer-feedback"></div>
+        `;
+        
+        quizContent.appendChild(questionDiv);
+    }
+}
+
+// Memory Game
+function startMemoryGame() {
+    const category = document.getElementById('memoryCategory').value;
+    const words = category === 'all' ? 
+        [...vocabulary] : 
+        vocabulary.filter(word => word.category === category);
+    
+    if (words.length < 6) {
+        alert('Need at least 6 words to start the memory game');
+        return;
+    }
+
+    const gameWords = shuffleArray(words).slice(0, 6);
+    const cards = [...gameWords.map(w => ({...w, type: 'word'})), 
+                   ...gameWords.map(w => ({...w, type: 'translation'}))];
+    const shuffledCards = shuffleArray(cards);
+
+    const grid = document.getElementById('memoryGrid');
+    grid.innerHTML = '';
+    
+    shuffledCards.forEach((card, index) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'memory-card';
+        cardDiv.dataset.index = index;
+        cardDiv.dataset.value = card.type === 'word' ? card.word : card.translation;
+        cardDiv.dataset.pair = card.id;
+        cardDiv.textContent = '?';
+        cardDiv.onclick = handleMemoryCardClick;
+        grid.appendChild(cardDiv);
+    });
+}
+
+let flippedCards = [];
+function handleMemoryCardClick(e) {
+    const card = e.target;
+    if (flippedCards.length === 2 || card.classList.contains('matched')) return;
+    
+    card.textContent = card.dataset.value;
+    card.classList.add('flipped');
+    flippedCards.push(card);
+
+    if (flippedCards.length === 2) {
+        if (flippedCards[0].dataset.pair === flippedCards[1].dataset.pair) {
+            flippedCards.forEach(c => c.classList.add('matched'));
+            flippedCards = [];
+        } else {
+            setTimeout(() => {
+                flippedCards.forEach(c => {
+                    c.textContent = '?';
+                    c.classList.remove('flipped');
+                });
+                flippedCards = [];
+            }, 1000);
+        }
+    }
+}
+
+// Speed Typing Game
+function startTypingGame() {
+    const category = document.getElementById('typingCategory').value;
+    const words = category === 'all' ? 
+        [...vocabulary] : 
+        vocabulary.filter(word => word.category === category);
+    
+    if (words.length === 0) {
+        alert('No words available for selected category');
+        return;
+    }
+
+    let currentWord = words[Math.floor(Math.random() * words.length)];
+    let startTime;
+    let wordsTyped = 0;
+    let errors = 0;
+
+    const wordDisplay = document.getElementById('wordToType');
+    const input = document.getElementById('typingInput');
+    const stats = document.getElementById('typingStats');
+
+    wordDisplay.textContent = currentWord.word;
+    input.value = '';
+    input.focus();
+
+    input.oninput = () => {
+        if (!startTime) startTime = Date.now();
+        
+        if (input.value === currentWord.word) {
+            wordsTyped++;
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            wordDisplay.textContent = currentWord.word;
+            input.value = '';
+            
+            const timeElapsed = (Date.now() - startTime) / 1000;
+            const wpm = Math.round((wordsTyped / timeElapsed) * 60);
+            stats.textContent = `WPM: ${wpm} | Words: ${wordsTyped} | Errors: ${errors}`;
+        } else if (input.value.length > currentWord.word.length) {
+            errors++;
+            input.value = '';
+        }
+    };
+}
+
+// Hangman Game
+function startHangman() {
+    const category = document.getElementById('hangmanCategory').value;
+    const words = category === 'all' ? 
+        [...vocabulary] : 
+        vocabulary.filter(word => word.category === category);
+    
+    if (words.length === 0) {
+        alert('No words available for selected category');
+        return;
+    }
+
+    const word = words[Math.floor(Math.random() * words.length)].word.toLowerCase();
+    let guessedLetters = new Set();
+    let remainingGuesses = 6;
+
+    const canvas = document.getElementById('hangmanCanvas');
+    const ctx = canvas.getContext('2d');
+    const wordDisplay = document.getElementById('hangmanWord');
+    const lettersDiv = document.getElementById('hangmanLetters');
+
+    // Clear canvas and draw gallows
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGallows(ctx);
+
+    // Create letter buttons
+    lettersDiv.innerHTML = '';
+    'abcdefghijklmnopqrstuvwxyz'.split('').forEach(letter => {
+        const btn = document.createElement('button');
+        btn.className = 'letter-btn';
+        btn.textContent = letter;
+        btn.onclick = () => guessLetter(letter);
+        lettersDiv.appendChild(btn);
+    });
+
+    function updateWordDisplay() {
+        wordDisplay.textContent = word
+            .split('')
+            .map(letter => guessedLetters.has(letter) ? letter : '_')
+            .join(' ');
+    }
+
+    function guessLetter(letter) {
+        if (guessedLetters.has(letter)) return;
+        
+        guessedLetters.add(letter);
+        if (!word.includes(letter)) {
+            remainingGuesses--;
+            drawHangman(ctx, 6 - remainingGuesses);
+        }
+        
+        updateWordDisplay();
+        
+        // Check win/lose conditions
+        if (!word.split('').some(l => !guessedLetters.has(l))) {
+            alert('You won!');
+        } else if (remainingGuesses === 0) {
+            alert(`Game Over! The word was: ${word}`);
+        }
+    }
+
+    updateWordDisplay();
+}
+
+// Word Search Game
+function startWordSearch() {
+    const category = document.getElementById('wordSearchCategory').value;
+    const words = category === 'all' ? 
+        [...vocabulary] : 
+        vocabulary.filter(word => word.category === category);
+    
+    if (words.length < 5) {
+        alert('Need at least 5 words for word search');
+        return;
+    }
+
+    const size = 15;
+    const grid = Array(size).fill().map(() => Array(size).fill(''));
+    const selectedWords = shuffleArray(words).slice(0, 8);
+    
+    // Place words in grid
+    selectedWords.forEach(wordObj => {
+        const word = wordObj.word.toUpperCase();
+        let placed = false;
+        let attempts = 0;
+        
+        while (!placed && attempts < 100) {
+            const direction = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+            const row = Math.floor(Math.random() * size);
+            const col = Math.floor(Math.random() * size);
+            
+            if (canPlaceWord(grid, word, row, col, direction)) {
+                placeWord(grid, word, row, col, direction);
+                placed = true;
+            }
+            attempts++;
+        }
+    });
+
+    // Fill empty cells with random letters
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            if (!grid[i][j]) {
+                grid[i][j] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            }
+        }
+    }
+
+    // Display grid
+    const gridDiv = document.getElementById('wordSearchGrid');
+    gridDiv.style.gridTemplateColumns = `repeat(${size}, 30px)`;
+    gridDiv.innerHTML = '';
+    
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            const cell = document.createElement('div');
+            cell.className = 'word-search-cell';
+            cell.textContent = grid[i][j];
+            cell.dataset.row = i;
+            cell.dataset.col = j;
+            gridDiv.appendChild(cell);
+        }
+    }
+
+    // Display word list
+    const wordsDiv = document.getElementById('wordSearchWords');
+    wordsDiv.innerHTML = `
+        <h3>Find these words:</h3>
+        ${selectedWords.map(w => `<span>${w.word}</span>`).join(', ')}
+    `;
+}
+
+// Utility Functions
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+function canPlaceWord(grid, word, row, col, direction) {
+    if (direction === 'horizontal') {
+        if (col + word.length > grid[0].length) return false;
+        for (let i = 0; i < word.length; i++) {
+            if (grid[row][col + i] && grid[row][col + i] !== word[i]) return false;
+        }
+    } else {
+        if (row + word.length > grid.length) return false;
+        for (let i = 0; i < word.length; i++) {
+            if (grid[row + i][col] && grid[row + i][col] !== word[i]) return false;
+        }
+    }
+    return true;
+}
+
+function placeWord(grid, word, row, col, direction) {
+    if (direction === 'horizontal') {
+        for (let i = 0; i < word.length; i++) {
+            grid[row][col + i] = word[i];
+        }
+    } else {
+        for (let i = 0; i < word.length; i++) {
+            grid[row + i][col] = word[i];
+        }
+    }
+}
+
+function drawGallows(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(50, 140);
+    ctx.lineTo(150, 140);
+    ctx.moveTo(100, 140);
+    ctx.lineTo(100, 20);
+    ctx.lineTo(150, 20);
+    ctx.lineTo(150, 40);
+    ctx.stroke();
+}
+
+function drawHangman(ctx, step) {
+    switch(step) {
+        case 1: // Head
+            ctx.beginPath();
+            ctx.arc(150, 50, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+        case 2: // Body
+            ctx.beginPath();
+            ctx.moveTo(150, 60);
+            ctx.lineTo(150, 100);
+            ctx.stroke();
+            break;
+        case 3: // Left arm
+            ctx.beginPath();
+            ctx.moveTo(150, 70);
+            ctx.lineTo(130, 90);
+            ctx.stroke();
+            break;
+        case 4: // Right arm
+            ctx.beginPath();
+            ctx.moveTo(150, 70);
+            ctx.lineTo(170, 90);
+            ctx.stroke();
+            break;
+        case 5: // Left leg
+            ctx.beginPath();
+            ctx.moveTo(150, 100);
+            ctx.lineTo(130, 120);
+            ctx.stroke();
+            break;
+        case 6: // Right leg
+            ctx.beginPath();
+            ctx.moveTo(150, 100);
+            ctx.lineTo(170, 120);
+            ctx.stroke();
+            break;
+    }
+}
+</script>
+
+    
+    <script>
+        // Initialize vocabulary with error handling
+        let vocabulary = [];
+        try {
+            const savedVocab = localStorage.getItem('vocabulary');
+            vocabulary = savedVocab ? JSON.parse(savedVocab) : [];
+        } catch (error) {
+            console.error('Error loading vocabulary:', error);
+            showMessage('Error loading saved words', 'error');
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            addWord();
+        }
+
+        function showMessage(text, type = 'success') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = text;
+            setTimeout(() => messageDiv.textContent = '', 3000);
+        }
+
+        function addWord() {
+            try {
+                const wordInput = document.getElementById('word');
+                const translationInput = document.getElementById('translation');
+                const categorySelect = document.getElementById('category');
+
+                const word = wordInput.value.trim();
+                const translation = translationInput.value.trim();
+                const category = categorySelect.value;
+
+                if (!category) {
+                    showMessage('Please select a category', 'error');
+                    return;
+                }
+
+                // Check for duplicates
+                if (vocabulary.some(item => item.word.toLowerCase() === word.toLowerCase())) {
+                    showMessage('This word already exists in your dictionary', 'error');
+                    return;
+                }
+
+                const newWord = {
+                    id: Date.now(),
+                    word: word,
+                    translation: translation,
+                    category: category,
+                    dateAdded: new Date().toISOString()
+                };
+
+                vocabulary.push(newWord);
+                saveVocabulary();
+                document.getElementById('addWordForm').reset();
+                showMessage('Word added successfully!');
+                updateStats();
+                displayDictionary();
+
+            } catch (error) {
+                console.error('Error adding word:', error);
+                showMessage('Error adding word', 'error');
+            }
+        }
+
+        function saveVocabulary() {
+            try {
+                localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+            } catch (error) {
+                console.error('Error saving vocabulary:', error);
+                showMessage('Error saving words', 'error');
+            }
+        }
+
+        function deleteWord(id) {
+            try {
+                if (confirm('Are you sure you want to delete this word?')) {
+                    vocabulary = vocabulary.filter(item => item.id !== id);
+                    saveVocabulary();
+                    updateStats();
+                    displayDictionary();
+                    showMessage('Word deleted successfully');
+                }
+            } catch (error) {
+                console.error('Error deleting word:', error);
+                showMessage('Error deleting word', 'error');
+            }
+        }
+
+        function updateStats() {
+            const stats = document.getElementById('stats');
+            const totalWords = vocabulary.length;
+            const categoryCounts = vocabulary.reduce((acc, item) => {
+                acc[item.category] = (acc[item.category] || 0) + 1;
+                return acc;
+            }, {});
+
+            stats.innerHTML = `
+                Total Words: ${totalWords}<br>
+                ${Object.entries(categoryCounts)
+                    .map(([category, count]) => `${category}: ${count}`)
+                    .join(' | ')}
+            `;
+        }
+
+        function displayDictionary(wordsToDisplay = vocabulary) {
+            const grid = document.getElementById('dictionaryGrid');
+            grid.innerHTML = '';
+
+            if (wordsToDisplay.length === 0) {
+                grid.innerHTML = '<p>No words found. Add some words to your dictionary!</p>';
+                return;
+            }
+
+            wordsToDisplay.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'word-card fade-in';
+                card.innerHTML = `
+                    <h4>${item.word}</h4>
+                    <p>${item.translation}</p>
+                    <p class="category">${item.category}</p>
+                    <button class="delete-btn" onclick="deleteWord(${item.id})">Delete</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function searchDictionary() {
+            const searchTerm = document.getElementById('searchWord').value.toLowerCase();
+            const category = document.getElementById('filterCategory').value;
+
+            const filteredVocab = vocabulary.filter(item => {
+                const matchesSearch = item.word.toLowerCase().includes(searchTerm) || 
+                                    item.translation.toLowerCase().includes(searchTerm);
+                const matchesCategory = category === 'all' || item.category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            displayDictionary(filteredVocab);
+        }
+
+        function filterDictionary() {
+            searchDictionary();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStats();
+            displayDictionary();
+        });
+
+        // Check for localStorage support
+        if (!localStorage) {
+            showMessage('Your browser does not support local storage. Your words will not be saved.', 'error');
+        }
+    </script>
+</body>
+</html>
